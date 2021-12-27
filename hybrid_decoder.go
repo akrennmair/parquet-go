@@ -31,7 +31,7 @@ type hybridDecoder struct {
 	r io.Reader
 
 	bitWidth     int
-	unpackerFn   unpack8int32Func
+	unpackerFn   unpack8Func[int32]
 	rleValueSize int
 
 	bpRun [8]int32
@@ -48,7 +48,7 @@ type hybridDecoder struct {
 func newHybridDecoder(bitWidth int) *hybridDecoder {
 	return &hybridDecoder{
 		bitWidth:   bitWidth,
-		unpackerFn: unpack8Int32FuncByWidth[bitWidth],
+		unpackerFn: unpacker[int32](bitWidth),
 
 		rleValueSize: (bitWidth + 7) / 8,
 	}

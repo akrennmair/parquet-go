@@ -18,8 +18,8 @@ type packedArray struct {
 	buf    [8]int32
 	bufPos int
 
-	writer pack8int32Func
-	reader unpack8int32Func
+	writer pack8Func[int32]
+	reader unpack8Func[int32]
 }
 
 // This function is only for testing, as it flushes first, so be careful!
@@ -39,8 +39,8 @@ func (pa *packedArray) reset(bw int) {
 	pa.count = 0
 	pa.bufPos = 0
 	pa.data = pa.data[:0]
-	pa.writer = pack8Int32FuncByWidth[bw]
-	pa.reader = unpack8Int32FuncByWidth[bw]
+	pa.writer = packer[int32](bw)
+	pa.reader = unpacker[int32](bw)
 }
 
 func (pa *packedArray) flush() {

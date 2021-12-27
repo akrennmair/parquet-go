@@ -55,7 +55,7 @@ func (b *booleanPlainDecoder) decodeValues(dst []interface{}) (int, error) {
 		if _, err := io.ReadFull(b.r, buf); err != nil {
 			return i, err
 		}
-		d := unpack8int32_1(buf)
+		d := unpacker[int32](1)(buf)
 		for j := 0; j < 8; j++ {
 			if i+j < len(dst) {
 				dst[i+j] = d[j] == 1

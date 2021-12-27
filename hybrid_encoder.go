@@ -9,10 +9,10 @@ import (
 type hybridEncoder struct {
 	w io.Writer
 
-	left       []int32
-	original   io.Writer
-	bitWidth   int
-	unpackerFn pack8int32Func
+	left     []int32
+	original io.Writer
+	bitWidth int
+	packerFn pack8Func[int32]
 
 	data *packedArray
 }
@@ -20,9 +20,9 @@ type hybridEncoder struct {
 func newHybridEncoder(bitWidth int) *hybridEncoder {
 	p := &packedArray{}
 	return &hybridEncoder{
-		bitWidth:   bitWidth,
-		unpackerFn: pack8Int32FuncByWidth[bitWidth],
-		data:       p,
+		bitWidth: bitWidth,
+		packerFn: packer[int32](bitWidth),
+		data:     p,
 	}
 }
 
