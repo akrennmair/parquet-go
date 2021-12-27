@@ -49,51 +49,18 @@ func getFixedLenByteArrayValuesEncoder(pageEncoding parquet.Encoding, len int, s
 	}
 }
 
-func getInt32ValuesEncoder(pageEncoding parquet.Encoding, typ *parquet.SchemaElement, store *dictStore) (valuesEncoder, error) {
-	var unSigned bool
-	if typ.ConvertedType != nil {
-		if *typ.ConvertedType == parquet.ConvertedType_UINT_8 || *typ.ConvertedType == parquet.ConvertedType_UINT_16 || *typ.ConvertedType == parquet.ConvertedType_UINT_32 {
-			unSigned = true
-		}
-	}
-	if typ.LogicalType != nil && typ.LogicalType.INTEGER != nil && !typ.LogicalType.INTEGER.IsSigned {
-		unSigned = true
-	}
+func getIntValuesEncoder[T intType](pageEncoding parquet.Encoding, typ *parquet.SchemaElement, store *dictStore) (valuesEncoder, error) {
 	switch pageEncoding {
 	case parquet.Encoding_PLAIN:
-		return &int32PlainEncoder{unSigned: unSigned}, nil
+		return &plainEncoder[T]{}, nil
 	case parquet.Encoding_DELTA_BINARY_PACKED:
-		return &int32DeltaBPEncoder{unSigned: unSigned}, nil
+		return &deltaBPEncoder[T]{}, nil
 	case parquet.Encoding_RLE_DICTIONARY:
 		return &dictEncoder{
 			dictStore: *store,
 		}, nil
 	default:
 		return nil, errors.Errorf("unsupported encoding %s for int32", pageEncoding)
-	}
-}
-
-func getInt64ValuesEncoder(pageEncoding parquet.Encoding, typ *parquet.SchemaElement, store *dictStore) (valuesEncoder, error) {
-	var unSigned bool
-	if typ.ConvertedType != nil {
-		if *typ.ConvertedType == parquet.ConvertedType_UINT_64 {
-			unSigned = true
-		}
-	}
-	if typ.LogicalType != nil && typ.LogicalType.INTEGER != nil && !typ.LogicalType.INTEGER.IsSigned {
-		unSigned = true
-	}
-	switch pageEncoding {
-	case parquet.Encoding_PLAIN:
-		return &int64PlainEncoder{unSigned: unSigned}, nil
-	case parquet.Encoding_DELTA_BINARY_PACKED:
-		return &int64DeltaBPEncoder{unSigned: unSigned}, nil
-	case parquet.Encoding_RLE_DICTIONARY:
-		return &dictEncoder{
-			dictStore: *store,
-		}, nil
-	default:
-		return nil, errors.Errorf("unsupported encoding %s for int64", pageEncoding)
 	}
 }
 
@@ -137,10 +104,10 @@ func getValuesEncoder(pageEncoding parquet.Encoding, typ *parquet.SchemaElement,
 		}
 
 	case parquet.Type_INT32:
-		return getInt32ValuesEncoder(pageEncoding, typ, store)
+		return getIntValuesEncoder[int32](pageEncoding, typ, store)
 
 	case parquet.Type_INT64:
-		return getInt64ValuesEncoder(pageEncoding, typ, store)
+		return getIntValuesEncoder[int64](pageEncoding, typ, store)
 
 	case parquet.Type_INT96:
 		switch pageEncoding {
@@ -173,27 +140,9 @@ func getDictValuesEncoder(typ *parquet.SchemaElement) (valuesEncoder, error) {
 	case parquet.Type_DOUBLE:
 		return &doublePlainEncoder{}, nil
 	case parquet.Type_INT32:
-		var unSigned bool
-		if typ.ConvertedType != nil {
-			if *typ.ConvertedType == parquet.ConvertedType_UINT_8 || *typ.ConvertedType == parquet.ConvertedType_UINT_16 || *typ.ConvertedType == parquet.ConvertedType_UINT_32 {
-				unSigned = true
-			}
-		}
-		if typ.LogicalType != nil && typ.LogicalType.INTEGER != nil && !typ.LogicalType.INTEGER.IsSigned {
-			unSigned = true
-		}
-		return &int32PlainEncoder{unSigned: unSigned}, nil
+		return &plainEncoder[int32]{}, nil
 	case parquet.Type_INT64:
-		var unSigned bool
-		if typ.ConvertedType != nil {
-			if *typ.ConvertedType == parquet.ConvertedType_UINT_64 {
-				unSigned = true
-			}
-		}
-		if typ.LogicalType != nil && typ.LogicalType.INTEGER != nil && !typ.LogicalType.INTEGER.IsSigned {
-			unSigned = true
-		}
-		return &int64PlainEncoder{unSigned: unSigned}, nil
+		return &plainEncoder[int64]{}, nil
 	case parquet.Type_INT96:
 		return &int96PlainEncoder{}, nil
 	}

@@ -104,7 +104,7 @@ type byteArrayDeltaLengthDecoder struct {
 func (b *byteArrayDeltaLengthDecoder) init(r io.Reader) error {
 	b.r = r
 	b.position = 0
-	lensDecoder := int32DeltaBPDecoder{}
+	lensDecoder := deltaBPDecoder[int32]{}
 	if err := lensDecoder.init(r); err != nil {
 		return err
 	}
@@ -172,8 +172,8 @@ func (b *byteArrayDeltaLengthEncoder) encodeValues(values []interface{}) error {
 }
 
 func (b *byteArrayDeltaLengthEncoder) Close() error {
-	enc := &int32DeltaBPEncoder{
-		deltaBitPackEncoder32: deltaBitPackEncoder32{
+	enc := &deltaBPEncoder[int32]{
+		deltaBitPackEncoder: deltaBitPackEncoder[int32]{
 			blockSize:      128,
 			miniBlockCount: 4,
 		},
@@ -193,7 +193,7 @@ type byteArrayDeltaDecoder struct {
 }
 
 func (d *byteArrayDeltaDecoder) init(r io.Reader) error {
-	lensDecoder := deltaBitPackDecoder32{}
+	lensDecoder := deltaBitPackDecoder[int32]{}
 	if err := lensDecoder.init(r); err != nil {
 		return err
 	}
@@ -277,8 +277,8 @@ func (b *byteArrayDeltaEncoder) encodeValues(values []interface{}) error {
 
 func (b *byteArrayDeltaEncoder) Close() error {
 	// write the lens first
-	enc := &int32DeltaBPEncoder{
-		deltaBitPackEncoder32: deltaBitPackEncoder32{
+	enc := &deltaBPEncoder[int32]{
+		deltaBitPackEncoder: deltaBitPackEncoder[int32]{
 			blockSize:      128,
 			miniBlockCount: 4,
 		},

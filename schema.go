@@ -461,9 +461,9 @@ func getColumnStore(elem *parquet.SchemaElement, params *ColumnParameters) (*Col
 	case parquet.Type_BOOLEAN:
 		colStore, err = NewBooleanStore(parquet.Encoding_PLAIN, params)
 	case parquet.Type_INT32:
-		colStore, err = NewInt32Store(parquet.Encoding_PLAIN, true, params)
+		colStore, err = NewIntStore[int32](parquet.Encoding_PLAIN, true, params)
 	case parquet.Type_INT64:
-		colStore, err = NewInt64Store(parquet.Encoding_PLAIN, true, params)
+		colStore, err = NewIntStore[int64](parquet.Encoding_PLAIN, true, params)
 	case parquet.Type_INT96:
 		colStore, err = NewInt96Store(parquet.Encoding_PLAIN, true, params)
 	case parquet.Type_FIXED_LEN_BYTE_ARRAY:

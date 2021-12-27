@@ -3,6 +3,7 @@ package goparquet
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"hash/fnv"
 	"io"
 	"math"
@@ -145,6 +146,42 @@ func decodePackedArray(d levelDecoder, count int) (*packedArray, int, error) {
 	}
 
 	return ret, nn, nil
+}
+
+func readUVarint[T intType](r io.Reader) (v T, err error) {
+	b, ok := r.(io.ByteReader)
+	if !ok {
+		b = &byteReader{Reader: r}
+	}
+
+	i, err := binary.ReadUvarint(b)
+	if err != nil {
+		return 0, err
+	}
+
+	if i > uint64(maxValue[T]()) {
+		return 0, fmt.Errorf("%T out of range", v)
+	}
+
+	return T(i), nil
+}
+
+func readVarint[T intType](r io.Reader) (v T, err error) {
+	b, ok := r.(io.ByteReader)
+	if !ok {
+		b = &byteReader{Reader: r}
+	}
+
+	i, err := binary.ReadVarint(b)
+	if err != nil {
+		return 0, err
+	}
+
+	if i > int64(maxValue[T]()) || i < int64(minValue[T]()) {
+		return 0, fmt.Errorf("%T out of range", v)
+	}
+
+	return T(i), nil
 }
 
 func readUVariant32(r io.Reader) (int32, error) {

@@ -26,7 +26,7 @@ func TestWriteThenReadFile(t *testing.T) {
 
 		w := NewFileWriter(wf, opts...)
 
-		fooStore, err := NewInt64Store(parquet.Encoding_PLAIN, true, &ColumnParameters{})
+		fooStore, err := NewIntStore[int64](parquet.Encoding_PLAIN, true, &ColumnParameters{})
 		require.NoError(t, err, "failed to create fooStore")
 
 		barStore, err := NewByteArrayStore(parquet.Encoding_PLAIN, true, &ColumnParameters{})
@@ -90,7 +90,7 @@ func TestWriteThenReadFileRepeated(t *testing.T) {
 
 	w := NewFileWriter(wf, WithCompressionCodec(parquet.CompressionCodec_SNAPPY), WithCreator("parquet-go-unittest"))
 
-	fooStore, err := NewInt64Store(parquet.Encoding_PLAIN, true, &ColumnParameters{})
+	fooStore, err := NewIntStore[int64](parquet.Encoding_PLAIN, true, &ColumnParameters{})
 	require.NoError(t, err, "failed to create fooStore")
 
 	require.NoError(t, w.AddColumn("foo", NewDataColumn(fooStore, parquet.FieldRepetitionType_REPEATED)))
@@ -197,7 +197,7 @@ func TestWriteThenReadFileNested(t *testing.T) {
 
 	w := NewFileWriter(wf, WithCompressionCodec(parquet.CompressionCodec_SNAPPY), WithCreator("parquet-go-unittest"))
 
-	fooStore, err := NewInt64Store(parquet.Encoding_PLAIN, true, &ColumnParameters{})
+	fooStore, err := NewIntStore[int64](parquet.Encoding_PLAIN, true, &ColumnParameters{})
 	require.NoError(t, err, "failed to create fooStore")
 	barStore, err := NewByteArrayStore(parquet.Encoding_PLAIN, true, &ColumnParameters{})
 	require.NoError(t, err, "failed to create barStore")
@@ -247,7 +247,7 @@ func TestWriteThenReadFileNested2(t *testing.T) {
 
 	w := NewFileWriter(wf, WithCompressionCodec(parquet.CompressionCodec_SNAPPY), WithCreator("parquet-go-unittest"))
 
-	blaStore, err := NewInt64Store(parquet.Encoding_PLAIN, true, &ColumnParameters{})
+	blaStore, err := NewIntStore[int64](parquet.Encoding_PLAIN, true, &ColumnParameters{})
 	require.NoError(t, err, "failed to create fooStore")
 	barStore, err := NewByteArrayStore(parquet.Encoding_PLAIN, true, &ColumnParameters{})
 	require.NoError(t, err, "failed to create barStore")
@@ -321,11 +321,11 @@ func TestWriteThenReadFileMap(t *testing.T) {
 
 	w := NewFileWriter(wf, WithCompressionCodec(parquet.CompressionCodec_SNAPPY), WithCreator("parquet-go-unittest"))
 
-	fooStore, err := NewInt64Store(parquet.Encoding_PLAIN, true, &ColumnParameters{})
+	fooStore, err := NewIntStore[int64](parquet.Encoding_PLAIN, true, &ColumnParameters{})
 	require.NoError(t, err, "failed to create fooStore")
 	barStore, err := NewByteArrayStore(parquet.Encoding_PLAIN, true, &ColumnParameters{})
 	require.NoError(t, err, "failed to create barStore")
-	elementStore, err := NewInt32Store(parquet.Encoding_PLAIN, true, &ColumnParameters{})
+	elementStore, err := NewIntStore[int32](parquet.Encoding_PLAIN, true, &ColumnParameters{})
 	require.NoError(t, err, "failed to create elementStore")
 
 	elementCol := NewDataColumn(elementStore, parquet.FieldRepetitionType_REQUIRED)
@@ -339,7 +339,7 @@ func TestWriteThenReadFileMap(t *testing.T) {
 	quuxParams.LogicalType.DECIMAL.Scale = 3
 	quuxParams.LogicalType.DECIMAL.Precision = 5
 
-	quuxStore, err := NewInt32Store(parquet.Encoding_PLAIN, true, quuxParams)
+	quuxStore, err := NewIntStore[int32](parquet.Encoding_PLAIN, true, quuxParams)
 	require.NoError(t, err)
 
 	require.NoError(t, w.AddColumn("foo", NewDataColumn(fooStore, parquet.FieldRepetitionType_REQUIRED)))
@@ -431,7 +431,7 @@ func TestWriteThenReadFileNested3(t *testing.T) {
 	require.NoError(t, err, "creating file failed")
 
 	w := NewFileWriter(wf, WithCompressionCodec(parquet.CompressionCodec_SNAPPY), WithCreator("parquet-go-unittest"))
-	valueStore, err := NewInt64Store(parquet.Encoding_PLAIN, true, &ColumnParameters{})
+	valueStore, err := NewIntStore[int64](parquet.Encoding_PLAIN, true, &ColumnParameters{})
 	require.NoError(t, err, "failed to create valueStore")
 	require.NoError(t, w.AddGroup("baz", parquet.FieldRepetitionType_OPTIONAL))
 	require.NoError(t, w.AddColumn("baz.value", NewDataColumn(valueStore, parquet.FieldRepetitionType_REQUIRED)))

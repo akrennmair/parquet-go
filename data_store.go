@@ -242,9 +242,9 @@ func getValuesStore(typ *parquet.SchemaElement) (*ColumnStore, error) {
 		return newPlainStore(&doubleStore{ColumnParameters: params}), nil
 
 	case parquet.Type_INT32:
-		return newPlainStore(&int32Store{ColumnParameters: params}), nil
+		return newPlainStore(&intStore[int32]{ColumnParameters: params}), nil
 	case parquet.Type_INT64:
-		return newPlainStore(&int64Store{ColumnParameters: params}), nil
+		return newPlainStore(&intStore[int64]{ColumnParameters: params}), nil
 	case parquet.Type_INT96:
 		store := &int96Store{}
 		store.ColumnParameters = params
@@ -264,28 +264,16 @@ func NewBooleanStore(enc parquet.Encoding, params *ColumnParameters) (*ColumnSto
 	return newStore(&booleanStore{ColumnParameters: params}, enc, false), nil
 }
 
-// NewInt32Store create a new column store to store int32 values. If allowDict is true,
+// NewIntStore create a new column store to store int32 or int64 values. If allowDict is true,
 // then using a dictionary is considered by the column store depending on its heuristics.
 // If allowDict is false, a dictionary will never be used to encode the data.
-func NewInt32Store(enc parquet.Encoding, allowDict bool, params *ColumnParameters) (*ColumnStore, error) {
+func NewIntStore[T intType](enc parquet.Encoding, allowDict bool, params *ColumnParameters) (*ColumnStore, error) {
 	switch enc {
 	case parquet.Encoding_PLAIN, parquet.Encoding_DELTA_BINARY_PACKED:
 	default:
 		return nil, errors.Errorf("encoding %q is not supported on this type", enc)
 	}
-	return newStore(&int32Store{ColumnParameters: params}, enc, allowDict), nil
-}
-
-// NewInt64Store creates a new column store to store int64 values. If allowDict is true,
-// then using a dictionary is considered by the column store depending on its heuristics.
-// If allowDict is false, a dictionary will never be used to encode the data.
-func NewInt64Store(enc parquet.Encoding, allowDict bool, params *ColumnParameters) (*ColumnStore, error) {
-	switch enc {
-	case parquet.Encoding_PLAIN, parquet.Encoding_DELTA_BINARY_PACKED:
-	default:
-		return nil, errors.Errorf("encoding %q is not supported on this type", enc)
-	}
-	return newStore(&int64Store{ColumnParameters: params}, enc, allowDict), nil
+	return newStore(&intStore[T]{ColumnParameters: params}, enc, allowDict), nil
 }
 
 // NewInt96Store creates a new column store to store int96 values. If allowDict is true,
