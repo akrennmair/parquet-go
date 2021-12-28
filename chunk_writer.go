@@ -86,7 +86,7 @@ func getValuesEncoder(pageEncoding parquet.Encoding, typ *parquet.SchemaElement,
 	case parquet.Type_FLOAT:
 		switch pageEncoding {
 		case parquet.Encoding_PLAIN:
-			return &floatPlainEncoder{}, nil
+			return &floatPlainEncoder[float32, internalFloat32]{}, nil
 		case parquet.Encoding_RLE_DICTIONARY:
 			return &dictEncoder{
 				dictStore: *store,
@@ -96,7 +96,7 @@ func getValuesEncoder(pageEncoding parquet.Encoding, typ *parquet.SchemaElement,
 	case parquet.Type_DOUBLE:
 		switch pageEncoding {
 		case parquet.Encoding_PLAIN:
-			return &doublePlainEncoder{}, nil
+			return &floatPlainEncoder[float64, internalFloat64]{}, nil
 		case parquet.Encoding_RLE_DICTIONARY:
 			return &dictEncoder{
 				dictStore: *store,
@@ -136,9 +136,9 @@ func getDictValuesEncoder(typ *parquet.SchemaElement) (valuesEncoder, error) {
 		}
 		return &byteArrayPlainEncoder{length: int(*typ.TypeLength)}, nil
 	case parquet.Type_FLOAT:
-		return &floatPlainEncoder{}, nil
+		return &floatPlainEncoder[float32, internalFloat32]{}, nil
 	case parquet.Type_DOUBLE:
-		return &doublePlainEncoder{}, nil
+		return &floatPlainEncoder[float64, internalFloat64]{}, nil
 	case parquet.Type_INT32:
 		return &plainEncoder[int32]{}, nil
 	case parquet.Type_INT64:

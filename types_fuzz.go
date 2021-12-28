@@ -1,3 +1,4 @@
+//go:build gofuzz
 // +build gofuzz
 
 package goparquet
@@ -150,36 +151,6 @@ func FuzzFloatPlain(data []byte) int {
 	}
 
 	e := floatPlainEncoder{}
-
-	if err := e.init(&bytes.Buffer{}); err != nil {
-		panic("unexpected error in init")
-	}
-
-	if err := e.encodeValues(dst1); err != nil {
-		return -1
-	}
-
-	if err := e.Close(); err != nil {
-		return -1
-	}
-
-	return 1
-}
-
-func FuzzDoublePlain(data []byte) int {
-	maxSize := len(data) / 8
-	d := doublePlainDecoder{}
-	err := d.init(bytes.NewReader(data))
-	if err != nil {
-		panic("unexpected error in init")
-	}
-	dst1 := make([]interface{}, maxSize)
-	_, err = d.decodeValues(dst1)
-	if err != nil {
-		return -1
-	}
-
-	e := doublePlainEncoder{}
 
 	if err := e.init(&bytes.Buffer{}); err != nil {
 		panic("unexpected error in init")

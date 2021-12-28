@@ -24,9 +24,9 @@ func getDictValuesDecoder(typ *parquet.SchemaElement) (valuesDecoder, error) {
 		}
 		return &byteArrayPlainDecoder{length: int(*typ.TypeLength)}, nil
 	case parquet.Type_FLOAT:
-		return &floatPlainDecoder{}, nil
+		return &floatPlainDecoder[float32, internalFloat32]{}, nil
 	case parquet.Type_DOUBLE:
-		return &doublePlainDecoder{}, nil
+		return &floatPlainDecoder[float64, internalFloat64]{}, nil
 	case parquet.Type_INT32:
 		return &plainDecoder[int32]{}, nil
 	case parquet.Type_INT64:
@@ -113,7 +113,7 @@ func getValuesDecoder(pageEncoding parquet.Encoding, typ *parquet.SchemaElement,
 	case parquet.Type_FLOAT:
 		switch pageEncoding {
 		case parquet.Encoding_PLAIN:
-			return &floatPlainDecoder{}, nil
+			return &floatPlainDecoder[float32, internalFloat32]{}, nil
 		case parquet.Encoding_RLE_DICTIONARY:
 			return &dictDecoder{values: dictValues}, nil
 		}
@@ -121,7 +121,7 @@ func getValuesDecoder(pageEncoding parquet.Encoding, typ *parquet.SchemaElement,
 	case parquet.Type_DOUBLE:
 		switch pageEncoding {
 		case parquet.Encoding_PLAIN:
-			return &doublePlainDecoder{}, nil
+			return &floatPlainDecoder[float64, internalFloat64]{}, nil
 		case parquet.Encoding_RLE_DICTIONARY:
 			return &dictDecoder{values: dictValues}, nil
 		}

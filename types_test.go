@@ -77,17 +77,17 @@ var (
 			},
 		},
 		{
-			name: "DoublePlain",
-			enc:  &doublePlainEncoder{},
-			dec:  &doublePlainDecoder{},
+			name: "FloatPlain[float64]",
+			enc:  &floatPlainEncoder[float64, internalFloat64]{},
+			dec:  &floatPlainDecoder[float64, internalFloat64]{},
 			rand: func() interface{} {
 				return rand.Float64()
 			},
 		},
 		{
-			name: "FloatPlain",
-			enc:  &floatPlainEncoder{},
-			dec:  &floatPlainDecoder{},
+			name: "FloatPlain[float32]",
+			enc:  &floatPlainEncoder[float32, internalFloat32]{},
+			dec:  &floatPlainDecoder[float32, internalFloat32]{},
 			rand: func() interface{} {
 				return rand.Float32()
 			},

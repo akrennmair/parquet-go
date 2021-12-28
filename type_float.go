@@ -1,111 +1,118 @@
 package goparquet
 
 import (
-	"encoding/binary"
 	"io"
-	"math"
+	"unsafe"
 
 	"github.com/pkg/errors"
 
 	"github.com/fraugster/parquet-go/parquet"
 )
 
-type floatPlainDecoder struct {
+type internalType[T floatType] interface {
+	MaxValue() T
+	MinValue() T
+	ParquetType() parquet.Type
+	ToBytes(v T) []byte
+	EncodeBinaryValues(w io.Writer, values []interface{}) error
+	DecodeBinaryValues(r io.Reader, dst []interface{}) (int, error)
+	// TODO
+}
+
+type floatType interface {
+	float32 | float64
+}
+
+type internalFloatType[T floatType] interface {
+	internalType[T]
+}
+
+type floatPlainDecoder[F floatType, T internalFloatType[F]] struct {
 	r io.Reader
 }
 
-func (f *floatPlainDecoder) init(r io.Reader) error {
+func (f *floatPlainDecoder[F, T]) init(r io.Reader) error {
 	f.r = r
 
 	return nil
 }
 
-func (f *floatPlainDecoder) decodeValues(dst []interface{}) (int, error) {
-	var data uint32
-	for i := range dst {
-		if err := binary.Read(f.r, binary.LittleEndian, &data); err != nil {
-			return i, err
-		}
-		dst[i] = math.Float32frombits(data)
-	}
-
-	return len(dst), nil
+func (f *floatPlainDecoder[F, T]) decodeValues(dst []interface{}) (int, error) {
+	var x T
+	return x.DecodeBinaryValues(f.r, dst)
 }
 
-type floatPlainEncoder struct {
+type floatPlainEncoder[F floatType, T internalFloatType[F]] struct {
 	w io.Writer
 }
 
-func (d *floatPlainEncoder) Close() error {
+func (d *floatPlainEncoder[F, T]) Close() error {
 	return nil
 }
 
-func (d *floatPlainEncoder) init(w io.Writer) error {
+func (d *floatPlainEncoder[F, T]) init(w io.Writer) error {
 	d.w = w
 
 	return nil
 }
 
-func (d *floatPlainEncoder) encodeValues(values []interface{}) error {
-	data := make([]uint32, len(values))
-	for i := range values {
-		data[i] = math.Float32bits(values[i].(float32))
-	}
-
-	return binary.Write(d.w, binary.LittleEndian, data)
+func (d *floatPlainEncoder[F, T]) encodeValues(values []interface{}) error {
+	var x T
+	return x.EncodeBinaryValues(d.w, values)
 }
 
-type floatStore struct {
+type floatStore[F floatType, T internalFloatType[F]] struct {
 	repTyp   parquet.FieldRepetitionType
-	min, max float32
+	min, max F
 
 	*ColumnParameters
 }
 
-func (f *floatStore) params() *ColumnParameters {
+func (f *floatStore[F, T]) params() *ColumnParameters {
 	if f.ColumnParameters == nil {
 		panic("ColumnParameters is nil")
 	}
 	return f.ColumnParameters
 }
 
-func (*floatStore) sizeOf(v interface{}) int {
-	return 4
+func (*floatStore[F, T]) sizeOf(v interface{}) int {
+	var x T
+	return int(unsafe.Sizeof(x))
 }
 
-func (f *floatStore) parquetType() parquet.Type {
-	return parquet.Type_FLOAT
+func (f *floatStore[F, T]) parquetType() parquet.Type {
+	var x T
+	return x.ParquetType()
 }
 
-func (f *floatStore) repetitionType() parquet.FieldRepetitionType {
+func (f *floatStore[F, T]) repetitionType() parquet.FieldRepetitionType {
 	return f.repTyp
 }
 
-func (f *floatStore) reset(rep parquet.FieldRepetitionType) {
+func (f *floatStore[F, T]) reset(rep parquet.FieldRepetitionType) {
+	var x T
 	f.repTyp = rep
-	f.min = math.MaxFloat32
-	f.max = -math.MaxFloat32
+	f.min = x.MaxValue()
+	f.max = x.MinValue()
 }
 
-func (f *floatStore) maxValue() []byte {
-	if f.max == -math.MaxFloat32 {
+func (f *floatStore[F, T]) maxValue() []byte {
+	var x T
+	if f.max == x.MinValue() {
 		return nil
 	}
-	ret := make([]byte, 4)
-	binary.LittleEndian.PutUint32(ret, math.Float32bits(f.max))
-	return ret
+	return x.ToBytes(f.max)
 }
 
-func (f *floatStore) minValue() []byte {
-	if f.min == math.MaxFloat32 {
+func (f *floatStore[F, T]) minValue() []byte {
+	var x T
+	if f.min == x.MaxValue() {
 		return nil
 	}
-	ret := make([]byte, 4)
-	binary.LittleEndian.PutUint32(ret, math.Float32bits(f.min))
-	return ret
+	return x.ToBytes(f.min)
 }
 
-func (f *floatStore) setMinMax(j float32) {
+func (f *floatStore[F, T]) setMinMax(j F) {
 	if j < f.min {
 		f.min = j
 	}
@@ -114,13 +121,13 @@ func (f *floatStore) setMinMax(j float32) {
 	}
 }
 
-func (f *floatStore) getValues(v interface{}) ([]interface{}, error) {
+func (f *floatStore[F, T]) getValues(v interface{}) ([]interface{}, error) {
 	var vals []interface{}
 	switch typed := v.(type) {
-	case float32:
+	case F:
 		f.setMinMax(typed)
 		vals = []interface{}{typed}
-	case []float32:
+	case []F:
 		if f.repTyp != parquet.FieldRepetitionType_REPEATED {
 			return nil, errors.Errorf("the value is not repeated but it is an array")
 		}
@@ -136,9 +143,9 @@ func (f *floatStore) getValues(v interface{}) ([]interface{}, error) {
 	return vals, nil
 }
 
-func (*floatStore) append(arrayIn interface{}, value interface{}) interface{} {
+func (*floatStore[F, T]) append(arrayIn interface{}, value interface{}) interface{} {
 	if arrayIn == nil {
-		arrayIn = make([]float32, 0, 1)
+		arrayIn = make([]F, 0, 1)
 	}
-	return append(arrayIn.([]float32), value.(float32))
+	return append(arrayIn.([]F), value.(F))
 }

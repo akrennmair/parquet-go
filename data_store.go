@@ -237,9 +237,9 @@ func getValuesStore(typ *parquet.SchemaElement) (*ColumnStore, error) {
 		return newPlainStore(&byteArrayStore{ColumnParameters: params}), nil
 
 	case parquet.Type_FLOAT:
-		return newPlainStore(&floatStore{ColumnParameters: params}), nil
+		return newPlainStore(&floatStore[float32, internalFloat32]{ColumnParameters: params}), nil
 	case parquet.Type_DOUBLE:
-		return newPlainStore(&doubleStore{ColumnParameters: params}), nil
+		return newPlainStore(&floatStore[float64, internalFloat64]{ColumnParameters: params}), nil
 
 	case parquet.Type_INT32:
 		return newPlainStore(&intStore[int32]{ColumnParameters: params}), nil
@@ -299,7 +299,7 @@ func NewFloatStore(enc parquet.Encoding, allowDict bool, params *ColumnParameter
 	default:
 		return nil, errors.Errorf("encoding %q is not supported on this type", enc)
 	}
-	return newStore(&floatStore{ColumnParameters: params}, enc, allowDict), nil
+	return newStore(&floatStore[float32, internalFloat32]{ColumnParameters: params}, enc, allowDict), nil
 }
 
 // NewDoubleStore creates a new column store to store double (float64) values. If allowDict is true,
@@ -311,7 +311,7 @@ func NewDoubleStore(enc parquet.Encoding, allowDict bool, params *ColumnParamete
 	default:
 		return nil, errors.Errorf("encoding %q is not supported on this type", enc)
 	}
-	return newStore(&doubleStore{ColumnParameters: params}, enc, allowDict), nil
+	return newStore(&floatStore[float64, internalFloat64]{ColumnParameters: params}, enc, allowDict), nil
 }
 
 // NewByteArrayStore creates a new column store to store byte arrays. If allowDict is true,
