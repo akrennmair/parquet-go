@@ -10,12 +10,12 @@ import (
 
 func TestUnpack8int64(t *testing.T) {
 	for _, test := range unpack8int64Tests {
-		unpackerFunc := unpacker[int64](test.width)
+		unpackerFunc := unpack8Int64FuncByWidth[test.width]
 		if got := unpackerFunc(test.data); got != test.values {
 			t.Errorf("unpack for width %d: got %v, want %v", test.width, got, test.values)
 		}
 
-		packerFunc := packer[int64](test.width)
+		packerFunc := pack8Int64FuncByWidth[test.width]
 		if got := packerFunc(test.values); !bytes.Equal(got, test.data) {
 			t.Errorf("pack for width %d: got %v, want %v", test.width, got, test.data)
 		}

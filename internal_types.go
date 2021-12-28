@@ -20,6 +20,7 @@ type intType interface {
 type internalIntType[T intType] interface {
 	internalType[T]
 	PackDeltas(deltas []T, miniBlockValueCount int) (bitWidths []uint8, packedData [][]byte)
+	GetUnpacker(bw int) func([]byte) [8]T
 }
 
 type floatType interface {
@@ -189,7 +190,7 @@ func (i internalInt32) PackDeltas(deltas []int32, miniBlockValueCount int) (bitW
 
 		bitWidths = append(bitWidths, uint8(bw))
 		data := make([]byte, 0, bw*len(buf))
-		packerFunc := packer[int32](bw)
+		packerFunc := pack8Int32FuncByWidth[bw]
 		for j := range buf {
 			data = append(data, packerFunc(buf[j])...)
 		}
@@ -200,6 +201,10 @@ func (i internalInt32) PackDeltas(deltas []int32, miniBlockValueCount int) (bitW
 
 func (f internalInt32) Sizeof() int {
 	return 4
+}
+
+func (f internalInt32) GetUnpacker(bw int) func([]byte) [8]int32 {
+	return unpack8Int32FuncByWidth[bw]
 }
 
 type internalInt64 struct{}
@@ -263,7 +268,7 @@ func (i internalInt64) PackDeltas(deltas []int64, miniBlockValueCount int) (bitW
 
 		bitWidths = append(bitWidths, uint8(bw))
 		data := make([]byte, 0, bw*len(buf))
-		packerFunc := packer[int64](bw)
+		packerFunc := pack8Int64FuncByWidth[bw]
 		for j := range buf {
 			data = append(data, packerFunc(buf[j])...)
 		}
@@ -274,4 +279,8 @@ func (i internalInt64) PackDeltas(deltas []int64, miniBlockValueCount int) (bitW
 
 func (f internalInt64) Sizeof() int {
 	return 8
+}
+
+func (f internalInt64) GetUnpacker(bw int) func([]byte) [8]int64 {
+	return unpack8Int64FuncByWidth[bw]
 }

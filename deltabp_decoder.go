@@ -23,7 +23,7 @@ type deltaBitPackDecoder[T intType, I internalIntType[T]] struct {
 	currentMiniBlockBitWidth uint8
 	miniBlockPosition        int32 // position inside the current mini block
 	position                 int32 // position in the value. since delta may have padding we need to track this
-	currentUnpacker          unpack8Func[T]
+	currentUnpacker          func([]byte) [8]T
 	miniBlock                [8]T
 }
 
@@ -112,6 +112,8 @@ func (d *deltaBitPackDecoder[T, I]) readMiniBlockHeader() error {
 }
 
 func (d *deltaBitPackDecoder[T, I]) next() (T, error) {
+	var x I
+
 	if d.position >= d.valuesCount {
 		// No value left in the buffer
 		return 0, io.EOF
@@ -129,7 +131,7 @@ func (d *deltaBitPackDecoder[T, I]) next() (T, error) {
 			}
 
 			d.currentMiniBlockBitWidth = d.miniBlockBitWidth[d.currentMiniBlock]
-			d.currentUnpacker = unpacker[T](int(d.currentMiniBlockBitWidth))
+			d.currentUnpacker = x.GetUnpacker(int(d.currentMiniBlockBitWidth))
 
 			d.miniBlockPosition = 0
 			d.currentMiniBlock++
