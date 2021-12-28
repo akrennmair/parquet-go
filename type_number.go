@@ -2,82 +2,81 @@ package goparquet
 
 import (
 	"io"
-	"unsafe"
 
 	"github.com/fraugster/parquet-go/parquet"
 	"github.com/pkg/errors"
 )
 
-type floatPlainDecoder[T floatType, I internalFloatType[T]] struct {
+type numberPlainDecoder[T numberType, I internalNumberType[T]] struct {
 	r io.Reader
 }
 
-func (f *floatPlainDecoder[T, I]) init(r io.Reader) error {
+func (f *numberPlainDecoder[T, I]) init(r io.Reader) error {
 	f.r = r
 
 	return nil
 }
 
-func (f *floatPlainDecoder[T, I]) decodeValues(dst []interface{}) (int, error) {
+func (f *numberPlainDecoder[T, I]) decodeValues(dst []interface{}) (int, error) {
 	var x I
 	return x.DecodeBinaryValues(f.r, dst)
 }
 
-type floatPlainEncoder[F floatType, T internalFloatType[F]] struct {
+type numberPlainEncoder[T numberType, I internalNumberType[T]] struct {
 	w io.Writer
 }
 
-func (d *floatPlainEncoder[T, I]) Close() error {
+func (d *numberPlainEncoder[T, I]) Close() error {
 	return nil
 }
 
-func (d *floatPlainEncoder[T, I]) init(w io.Writer) error {
+func (d *numberPlainEncoder[T, I]) init(w io.Writer) error {
 	d.w = w
 
 	return nil
 }
 
-func (d *floatPlainEncoder[T, I]) encodeValues(values []interface{}) error {
+func (d *numberPlainEncoder[T, I]) encodeValues(values []interface{}) error {
 	var x I
 	return x.EncodeBinaryValues(d.w, values)
 }
 
-type floatStore[F floatType, T internalFloatType[F]] struct {
+type numberStore[T numberType, I internalNumberType[T]] struct {
 	repTyp   parquet.FieldRepetitionType
-	min, max F
+	min, max T
 
 	*ColumnParameters
 }
 
-func (f *floatStore[T, I]) params() *ColumnParameters {
+func (f *numberStore[T, I]) params() *ColumnParameters {
 	if f.ColumnParameters == nil {
 		panic("ColumnParameters is nil")
 	}
 	return f.ColumnParameters
 }
 
-func (*floatStore[T, I]) sizeOf(v interface{}) int {
-	var x T
-	return int(unsafe.Sizeof(x))
+func (*numberStore[T, I]) sizeOf(v interface{}) int {
+	var x I
+	return x.Sizeof()
 }
 
-func (f *floatStore[T, I]) parquetType() parquet.Type {
+func (f *numberStore[T, I]) parquetType() parquet.Type {
 	var x I
 	return x.ParquetType()
 }
 
-func (f *floatStore[T, I]) repetitionType() parquet.FieldRepetitionType {
+func (f *numberStore[T, I]) repetitionType() parquet.FieldRepetitionType {
 	return f.repTyp
 }
 
-func (f *floatStore[T, I]) reset(rep parquet.FieldRepetitionType) {
+func (f *numberStore[T, I]) reset(rep parquet.FieldRepetitionType) {
 	var x I
 	f.repTyp = rep
 	f.min = x.MaxValue()
 	f.max = x.MinValue()
 }
 
-func (f *floatStore[T, I]) maxValue() []byte {
+func (f *numberStore[T, I]) maxValue() []byte {
 	var x I
 	if f.max == x.MinValue() {
 		return nil
@@ -85,7 +84,7 @@ func (f *floatStore[T, I]) maxValue() []byte {
 	return x.ToBytes(f.max)
 }
 
-func (f *floatStore[T, I]) minValue() []byte {
+func (f *numberStore[T, I]) minValue() []byte {
 	var x I
 	if f.min == x.MaxValue() {
 		return nil
@@ -93,7 +92,7 @@ func (f *floatStore[T, I]) minValue() []byte {
 	return x.ToBytes(f.min)
 }
 
-func (f *floatStore[T, I]) setMinMax(j T) {
+func (f *numberStore[T, I]) setMinMax(j T) {
 	if j < f.min {
 		f.min = j
 	}
@@ -102,7 +101,9 @@ func (f *floatStore[T, I]) setMinMax(j T) {
 	}
 }
 
-func (f *floatStore[T, I]) getValues(v interface{}) ([]interface{}, error) {
+func (f *numberStore[T, I]) getValues(v interface{}) ([]interface{}, error) {
+	var t T
+
 	var vals []interface{}
 	switch typed := v.(type) {
 	case T:
@@ -118,13 +119,13 @@ func (f *floatStore[T, I]) getValues(v interface{}) ([]interface{}, error) {
 			vals[j] = typed[j]
 		}
 	default:
-		return nil, errors.Errorf("unsupported type for storing in float32 column: %T => %+v", v, v)
+		return nil, errors.Errorf("unsupported type for storing in %T column: %T => %+v", t, v, v)
 	}
 
 	return vals, nil
 }
 
-func (*floatStore[T, I]) append(arrayIn interface{}, value interface{}) interface{} {
+func (*numberStore[T, I]) append(arrayIn interface{}, value interface{}) interface{} {
 	if arrayIn == nil {
 		arrayIn = make([]T, 0, 1)
 	}

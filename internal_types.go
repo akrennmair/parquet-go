@@ -9,7 +9,7 @@ import (
 	"github.com/fraugster/parquet-go/parquet"
 )
 
-type dataType interface {
+type numberType interface {
 	floatType | intType
 }
 
@@ -26,17 +26,18 @@ type floatType interface {
 	float32 | float64
 }
 
-type internalFloatType[T floatType] interface {
+type internalNumberType[T numberType] interface {
 	internalType[T]
 }
 
-type internalType[T dataType] interface {
+type internalType[T numberType] interface {
 	MaxValue() T
 	MinValue() T
 	ParquetType() parquet.Type
 	ToBytes(v T) []byte
 	EncodeBinaryValues(w io.Writer, values []interface{}) error
 	DecodeBinaryValues(r io.Reader, dst []interface{}) (int, error)
+	Sizeof() int
 }
 
 type internalFloat32 struct{}
@@ -79,6 +80,10 @@ func (f internalFloat32) DecodeBinaryValues(r io.Reader, dst []interface{}) (int
 	return len(dst), nil
 }
 
+func (f internalFloat32) Sizeof() int {
+	return 4
+}
+
 type internalFloat64 struct{}
 
 func (f internalFloat64) MinValue() float64 {
@@ -117,6 +122,10 @@ func (f internalFloat64) DecodeBinaryValues(r io.Reader, dst []interface{}) (int
 		dst[i] = math.Float64frombits(data)
 	}
 	return len(dst), nil
+}
+
+func (f internalFloat64) Sizeof() int {
+	return 8
 }
 
 type internalInt32 struct{}
@@ -189,6 +198,10 @@ func (i internalInt32) PackDeltas(deltas []int32, miniBlockValueCount int) (bitW
 	return
 }
 
+func (f internalInt32) Sizeof() int {
+	return 4
+}
+
 type internalInt64 struct{}
 
 func (i internalInt64) MinValue() int64 {
@@ -257,4 +270,8 @@ func (i internalInt64) PackDeltas(deltas []int64, miniBlockValueCount int) (bitW
 		packedData = append(packedData, data)
 	}
 	return
+}
+
+func (f internalInt64) Sizeof() int {
+	return 8
 }

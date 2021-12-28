@@ -50,17 +50,18 @@ func getFixedLenByteArrayValuesEncoder(pageEncoding parquet.Encoding, len int, s
 }
 
 func getIntValuesEncoder[T intType, I internalIntType[T]](pageEncoding parquet.Encoding, typ *parquet.SchemaElement, store *dictStore) (valuesEncoder, error) {
+	var x T
 	switch pageEncoding {
 	case parquet.Encoding_PLAIN:
-		return &plainEncoder[T, I]{}, nil
+		return &numberPlainEncoder[T, I]{}, nil
 	case parquet.Encoding_DELTA_BINARY_PACKED:
-		return &deltaBPEncoder[T, I]{}, nil
+		return &deltaBitPackEncoder[T, I]{}, nil
 	case parquet.Encoding_RLE_DICTIONARY:
 		return &dictEncoder{
 			dictStore: *store,
 		}, nil
 	default:
-		return nil, errors.Errorf("unsupported encoding %s for int32", pageEncoding)
+		return nil, errors.Errorf("unsupported encoding %s for %T", pageEncoding, x)
 	}
 }
 
@@ -86,7 +87,7 @@ func getValuesEncoder(pageEncoding parquet.Encoding, typ *parquet.SchemaElement,
 	case parquet.Type_FLOAT:
 		switch pageEncoding {
 		case parquet.Encoding_PLAIN:
-			return &floatPlainEncoder[float32, internalFloat32]{}, nil
+			return &numberPlainEncoder[float32, internalFloat32]{}, nil
 		case parquet.Encoding_RLE_DICTIONARY:
 			return &dictEncoder{
 				dictStore: *store,
@@ -96,7 +97,7 @@ func getValuesEncoder(pageEncoding parquet.Encoding, typ *parquet.SchemaElement,
 	case parquet.Type_DOUBLE:
 		switch pageEncoding {
 		case parquet.Encoding_PLAIN:
-			return &floatPlainEncoder[float64, internalFloat64]{}, nil
+			return &numberPlainEncoder[float64, internalFloat64]{}, nil
 		case parquet.Encoding_RLE_DICTIONARY:
 			return &dictEncoder{
 				dictStore: *store,
@@ -136,13 +137,13 @@ func getDictValuesEncoder(typ *parquet.SchemaElement) (valuesEncoder, error) {
 		}
 		return &byteArrayPlainEncoder{length: int(*typ.TypeLength)}, nil
 	case parquet.Type_FLOAT:
-		return &floatPlainEncoder[float32, internalFloat32]{}, nil
+		return &numberPlainEncoder[float32, internalFloat32]{}, nil
 	case parquet.Type_DOUBLE:
-		return &floatPlainEncoder[float64, internalFloat64]{}, nil
+		return &numberPlainEncoder[float64, internalFloat64]{}, nil
 	case parquet.Type_INT32:
-		return &plainEncoder[int32, internalInt32]{}, nil
+		return &numberPlainEncoder[int32, internalInt32]{}, nil
 	case parquet.Type_INT64:
-		return &plainEncoder[int64, internalInt64]{}, nil
+		return &numberPlainEncoder[int64, internalInt64]{}, nil
 	case parquet.Type_INT96:
 		return &int96PlainEncoder{}, nil
 	}

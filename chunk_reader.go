@@ -24,13 +24,13 @@ func getDictValuesDecoder(typ *parquet.SchemaElement) (valuesDecoder, error) {
 		}
 		return &byteArrayPlainDecoder{length: int(*typ.TypeLength)}, nil
 	case parquet.Type_FLOAT:
-		return &floatPlainDecoder[float32, internalFloat32]{}, nil
+		return &numberPlainDecoder[float32, internalFloat32]{}, nil
 	case parquet.Type_DOUBLE:
-		return &floatPlainDecoder[float64, internalFloat64]{}, nil
+		return &numberPlainDecoder[float64, internalFloat64]{}, nil
 	case parquet.Type_INT32:
-		return &plainDecoder[int32, internalInt32]{}, nil
+		return &numberPlainDecoder[int32, internalInt32]{}, nil
 	case parquet.Type_INT64:
-		return &plainDecoder[int64, internalInt64]{}, nil
+		return &numberPlainDecoder[int64, internalInt64]{}, nil
 	case parquet.Type_INT96:
 		return &int96PlainDecoder{}, nil
 	}
@@ -82,9 +82,9 @@ func getFixedLenByteArrayValuesDecoder(pageEncoding parquet.Encoding, len int, d
 func getIntValuesDecoder[T intType, I internalIntType[T]](pageEncoding parquet.Encoding, typ *parquet.SchemaElement, dictValues []interface{}) (valuesDecoder, error) {
 	switch pageEncoding {
 	case parquet.Encoding_PLAIN:
-		return &plainDecoder[T, I]{}, nil
+		return &numberPlainDecoder[T, I]{}, nil
 	case parquet.Encoding_DELTA_BINARY_PACKED:
-		return &deltaBPDecoder[T, I]{}, nil
+		return &deltaBitPackDecoder[T, I]{}, nil
 	case parquet.Encoding_RLE_DICTIONARY:
 		return &dictDecoder{values: dictValues}, nil
 	default:
@@ -113,7 +113,7 @@ func getValuesDecoder(pageEncoding parquet.Encoding, typ *parquet.SchemaElement,
 	case parquet.Type_FLOAT:
 		switch pageEncoding {
 		case parquet.Encoding_PLAIN:
-			return &floatPlainDecoder[float32, internalFloat32]{}, nil
+			return &numberPlainDecoder[float32, internalFloat32]{}, nil
 		case parquet.Encoding_RLE_DICTIONARY:
 			return &dictDecoder{values: dictValues}, nil
 		}
@@ -121,7 +121,7 @@ func getValuesDecoder(pageEncoding parquet.Encoding, typ *parquet.SchemaElement,
 	case parquet.Type_DOUBLE:
 		switch pageEncoding {
 		case parquet.Encoding_PLAIN:
-			return &floatPlainDecoder[float64, internalFloat64]{}, nil
+			return &numberPlainDecoder[float64, internalFloat64]{}, nil
 		case parquet.Encoding_RLE_DICTIONARY:
 			return &dictDecoder{values: dictValues}, nil
 		}

@@ -33,32 +33,32 @@ var (
 	encFixtures = []encodingFixtures{
 		{
 			name: "Int32Plain",
-			enc:  &plainEncoder[int32, internalInt32]{},
-			dec:  &plainDecoder[int32, internalInt32]{},
+			enc:  &numberPlainEncoder[int32, internalInt32]{},
+			dec:  &numberPlainDecoder[int32, internalInt32]{},
 			rand: func() interface{} {
 				return int32(rand.Int())
 			},
 		},
 		{
 			name: "Int32Delta",
-			enc:  &deltaBPEncoder[int32, internalInt32]{deltaBitPackEncoder: deltaBitPackEncoder[int32, internalInt32]{blockSize: 128, miniBlockCount: 4}},
-			dec:  &deltaBPDecoder[int32, internalInt32]{},
+			enc:  &deltaBitPackEncoder[int32, internalInt32]{blockSize: 128, miniBlockCount: 4},
+			dec:  &deltaBitPackDecoder[int32, internalInt32]{},
 			rand: func() interface{} {
 				return int32(rand.Int())
 			},
 		},
 		{
 			name: "Int64Plain",
-			enc:  &plainEncoder[int64, internalInt64]{},
-			dec:  &plainDecoder[int64, internalInt64]{},
+			enc:  &numberPlainEncoder[int64, internalInt64]{},
+			dec:  &numberPlainDecoder[int64, internalInt64]{},
 			rand: func() interface{} {
 				return rand.Int63()
 			},
 		},
 		{
 			name: "Int64Delta",
-			enc:  &deltaBPEncoder[int64, internalInt64]{deltaBitPackEncoder: deltaBitPackEncoder[int64, internalInt64]{blockSize: 128, miniBlockCount: 4}},
-			dec:  &deltaBPDecoder[int64, internalInt64]{},
+			enc:  &deltaBitPackEncoder[int64, internalInt64]{blockSize: 128, miniBlockCount: 4},
+			dec:  &deltaBitPackDecoder[int64, internalInt64]{},
 			rand: func() interface{} {
 				return rand.Int63()
 			},
@@ -78,16 +78,16 @@ var (
 		},
 		{
 			name: "FloatPlain[float64]",
-			enc:  &floatPlainEncoder[float64, internalFloat64]{},
-			dec:  &floatPlainDecoder[float64, internalFloat64]{},
+			enc:  &numberPlainEncoder[float64, internalFloat64]{},
+			dec:  &numberPlainDecoder[float64, internalFloat64]{},
 			rand: func() interface{} {
 				return rand.Float64()
 			},
 		},
 		{
 			name: "FloatPlain[float32]",
-			enc:  &floatPlainEncoder[float32, internalFloat32]{},
-			dec:  &floatPlainDecoder[float32, internalFloat32]{},
+			enc:  &numberPlainEncoder[float32, internalFloat32]{},
+			dec:  &numberPlainDecoder[float32, internalFloat32]{},
 			rand: func() interface{} {
 				return rand.Float32()
 			},
