@@ -33,32 +33,32 @@ var (
 	encFixtures = []encodingFixtures{
 		{
 			name: "Int32Plain",
-			enc:  &plainEncoder[int32]{},
-			dec:  &plainDecoder[int32]{},
+			enc:  &plainEncoder[int32, internalInt32]{},
+			dec:  &plainDecoder[int32, internalInt32]{},
 			rand: func() interface{} {
 				return int32(rand.Int())
 			},
 		},
 		{
 			name: "Int32Delta",
-			enc:  &deltaBPEncoder[int32]{deltaBitPackEncoder: deltaBitPackEncoder[int32]{blockSize: 128, miniBlockCount: 4}},
-			dec:  &deltaBPDecoder[int32]{},
+			enc:  &deltaBPEncoder[int32, internalInt32]{deltaBitPackEncoder: deltaBitPackEncoder[int32, internalInt32]{blockSize: 128, miniBlockCount: 4}},
+			dec:  &deltaBPDecoder[int32, internalInt32]{},
 			rand: func() interface{} {
 				return int32(rand.Int())
 			},
 		},
 		{
 			name: "Int64Plain",
-			enc:  &plainEncoder[int64]{},
-			dec:  &plainDecoder[int64]{},
+			enc:  &plainEncoder[int64, internalInt64]{},
+			dec:  &plainDecoder[int64, internalInt64]{},
 			rand: func() interface{} {
 				return rand.Int63()
 			},
 		},
 		{
 			name: "Int64Delta",
-			enc:  &deltaBPEncoder[int64]{deltaBitPackEncoder: deltaBitPackEncoder[int64]{blockSize: 128, miniBlockCount: 4}},
-			dec:  &deltaBPDecoder[int64]{},
+			enc:  &deltaBPEncoder[int64, internalInt64]{deltaBitPackEncoder: deltaBitPackEncoder[int64, internalInt64]{blockSize: 128, miniBlockCount: 4}},
+			dec:  &deltaBPDecoder[int64, internalInt64]{},
 			rand: func() interface{} {
 				return rand.Int63()
 			},
@@ -250,7 +250,7 @@ var (
 	stFixtures = []storeFixtures{
 		{
 			name:  "Int32Store",
-			store: mustColumnStore(NewIntStore[int32](parquet.Encoding_PLAIN, false, &ColumnParameters{})),
+			store: mustColumnStore(NewIntStore[int32, internalInt32](parquet.Encoding_PLAIN, false, &ColumnParameters{})),
 			rand: func(n int) interface{} {
 				ret := make([]int32, n)
 				for i := range ret {
@@ -261,7 +261,7 @@ var (
 		},
 		{
 			name:  "Int64Store",
-			store: mustColumnStore(NewIntStore[int64](parquet.Encoding_PLAIN, false, &ColumnParameters{})),
+			store: mustColumnStore(NewIntStore[int64, internalInt64](parquet.Encoding_PLAIN, false, &ColumnParameters{})),
 			rand: func(n int) interface{} {
 				ret := make([]int64, n)
 				for i := range ret {

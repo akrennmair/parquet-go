@@ -242,9 +242,9 @@ func getValuesStore(typ *parquet.SchemaElement) (*ColumnStore, error) {
 		return newPlainStore(&floatStore[float64, internalFloat64]{ColumnParameters: params}), nil
 
 	case parquet.Type_INT32:
-		return newPlainStore(&intStore[int32]{ColumnParameters: params}), nil
+		return newPlainStore(&intStore[int32, internalInt32]{ColumnParameters: params}), nil
 	case parquet.Type_INT64:
-		return newPlainStore(&intStore[int64]{ColumnParameters: params}), nil
+		return newPlainStore(&intStore[int64, internalInt64]{ColumnParameters: params}), nil
 	case parquet.Type_INT96:
 		store := &int96Store{}
 		store.ColumnParameters = params
@@ -267,13 +267,13 @@ func NewBooleanStore(enc parquet.Encoding, params *ColumnParameters) (*ColumnSto
 // NewIntStore create a new column store to store int32 or int64 values. If allowDict is true,
 // then using a dictionary is considered by the column store depending on its heuristics.
 // If allowDict is false, a dictionary will never be used to encode the data.
-func NewIntStore[T intType](enc parquet.Encoding, allowDict bool, params *ColumnParameters) (*ColumnStore, error) {
+func NewIntStore[T intType, I internalIntType[T]](enc parquet.Encoding, allowDict bool, params *ColumnParameters) (*ColumnStore, error) {
 	switch enc {
 	case parquet.Encoding_PLAIN, parquet.Encoding_DELTA_BINARY_PACKED:
 	default:
 		return nil, errors.Errorf("encoding %q is not supported on this type", enc)
 	}
-	return newStore(&intStore[T]{ColumnParameters: params}, enc, allowDict), nil
+	return newStore(&intStore[T, I]{ColumnParameters: params}, enc, allowDict), nil
 }
 
 // NewInt96Store creates a new column store to store int96 values. If allowDict is true,

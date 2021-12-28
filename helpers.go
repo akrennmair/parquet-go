@@ -148,7 +148,9 @@ func decodePackedArray(d levelDecoder, count int) (*packedArray, int, error) {
 	return ret, nn, nil
 }
 
-func readUVarint[T intType](r io.Reader) (v T, err error) {
+func readUVarint[T intType, I internalIntType[T]](r io.Reader) (v T, err error) {
+	var x I
+
 	b, ok := r.(io.ByteReader)
 	if !ok {
 		b = &byteReader{Reader: r}
@@ -159,14 +161,16 @@ func readUVarint[T intType](r io.Reader) (v T, err error) {
 		return 0, err
 	}
 
-	if i > uint64(maxValue[T]()) {
+	if i > uint64(x.MaxValue()) {
 		return 0, fmt.Errorf("%T out of range", v)
 	}
 
 	return T(i), nil
 }
 
-func readVarint[T intType](r io.Reader) (v T, err error) {
+func readVarint[T intType, I internalIntType[T]](r io.Reader) (v T, err error) {
+	var x I
+
 	b, ok := r.(io.ByteReader)
 	if !ok {
 		b = &byteReader{Reader: r}
@@ -177,7 +181,7 @@ func readVarint[T intType](r io.Reader) (v T, err error) {
 		return 0, err
 	}
 
-	if i > int64(maxValue[T]()) || i < int64(minValue[T]()) {
+	if i > int64(x.MaxValue()) || i < int64(x.MinValue()) {
 		return 0, fmt.Errorf("%T out of range", v)
 	}
 

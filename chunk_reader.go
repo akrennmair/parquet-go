@@ -28,9 +28,9 @@ func getDictValuesDecoder(typ *parquet.SchemaElement) (valuesDecoder, error) {
 	case parquet.Type_DOUBLE:
 		return &floatPlainDecoder[float64, internalFloat64]{}, nil
 	case parquet.Type_INT32:
-		return &plainDecoder[int32]{}, nil
+		return &plainDecoder[int32, internalInt32]{}, nil
 	case parquet.Type_INT64:
-		return &plainDecoder[int64]{}, nil
+		return &plainDecoder[int64, internalInt64]{}, nil
 	case parquet.Type_INT96:
 		return &int96PlainDecoder{}, nil
 	}
@@ -79,12 +79,12 @@ func getFixedLenByteArrayValuesDecoder(pageEncoding parquet.Encoding, len int, d
 	}
 }
 
-func getIntValuesDecoder[T intType](pageEncoding parquet.Encoding, typ *parquet.SchemaElement, dictValues []interface{}) (valuesDecoder, error) {
+func getIntValuesDecoder[T intType, I internalIntType[T]](pageEncoding parquet.Encoding, typ *parquet.SchemaElement, dictValues []interface{}) (valuesDecoder, error) {
 	switch pageEncoding {
 	case parquet.Encoding_PLAIN:
-		return &plainDecoder[T]{}, nil
+		return &plainDecoder[T, I]{}, nil
 	case parquet.Encoding_DELTA_BINARY_PACKED:
-		return &deltaBPDecoder[T]{}, nil
+		return &deltaBPDecoder[T, I]{}, nil
 	case parquet.Encoding_RLE_DICTIONARY:
 		return &dictDecoder{values: dictValues}, nil
 	default:
@@ -127,10 +127,10 @@ func getValuesDecoder(pageEncoding parquet.Encoding, typ *parquet.SchemaElement,
 		}
 
 	case parquet.Type_INT32:
-		return getIntValuesDecoder[int32](pageEncoding, typ, dictValues)
+		return getIntValuesDecoder[int32, internalInt32](pageEncoding, typ, dictValues)
 
 	case parquet.Type_INT64:
-		return getIntValuesDecoder[int64](pageEncoding, typ, dictValues)
+		return getIntValuesDecoder[int64, internalInt64](pageEncoding, typ, dictValues)
 
 	case parquet.Type_INT96:
 		switch pageEncoding {

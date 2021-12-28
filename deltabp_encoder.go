@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
-	"math/bits"
 
 	"github.com/pkg/errors"
 )
 
-type deltaBitPackEncoder[T intType] struct {
+type deltaBitPackEncoder[T intType, I internalIntType[T]] struct {
 	deltas   []T
 	bitWidth []uint8
 	packed   [][]byte
@@ -29,7 +28,7 @@ type deltaBitPackEncoder[T intType] struct {
 	previousValue T
 }
 
-func (d *deltaBitPackEncoder[T]) init(w io.Writer) error {
+func (d *deltaBitPackEncoder[T, I]) init(w io.Writer) error {
 	d.w = w
 
 	if d.blockSize%128 != 0 || d.blockSize <= 0 {
@@ -45,9 +44,11 @@ func (d *deltaBitPackEncoder[T]) init(w io.Writer) error {
 		return errors.Errorf("invalid mini block count, the mini block value count should be multiply of 8, it is %d", d.miniBlockCount)
 	}
 
+	var x I
+
 	d.firstValue = 0
 	d.valuesCount = 0
-	d.minDelta = maxValue[T]()
+	d.minDelta = x.MaxValue()
 	d.deltas = make([]T, 0, d.blockSize)
 	d.previousValue = 0
 	d.buffer = &bytes.Buffer{}
@@ -55,7 +56,9 @@ func (d *deltaBitPackEncoder[T]) init(w io.Writer) error {
 	return nil
 }
 
-func (d *deltaBitPackEncoder[T]) flush() error {
+func (d *deltaBitPackEncoder[T, I]) flush() error {
+	var x I
+
 	// Technically, based on the spec after this step all values are positive, but NO, it's not. the problem is when
 	// the min delta is small enough (lets say MinInt) and one of deltas are MaxInt, the the result of MaxInt-MinInt is
 	// -1, get the idea, there is a lot of numbers here because of overflow can produce negative value
@@ -67,50 +70,7 @@ func (d *deltaBitPackEncoder[T]) flush() error {
 		return err
 	}
 
-	var x T
-
-	d.bitWidth = d.bitWidth[:0] //reset the bitWidth buffer
-	d.packed = d.packed[:0]
-	for i := 0; i < len(d.deltas); i += d.miniBlockValueCount {
-		end := i + d.miniBlockValueCount
-		if end >= len(d.deltas) {
-			end = len(d.deltas)
-		}
-		var bw int
-		buf := make([][8]T, d.miniBlockValueCount/8)
-		switch (interface{}(x)).(type) {
-		case int32:
-			// The cast to uint32 here, is the key. or the max not works at all
-			max := uint32(d.deltas[i])
-			for j := i; j < end; j++ {
-				if max < uint32(d.deltas[j]) {
-					max = uint32(d.deltas[j])
-				}
-				t := j - i
-				buf[t/8][t%8] = d.deltas[j]
-			}
-			bw = bits.Len32(uint32(max))
-		case int64:
-			// The cast to uint64 here, is the key. or the max not works at all
-			max := uint64(d.deltas[i])
-			for j := i; j < end; j++ {
-				if max < uint64(d.deltas[j]) {
-					max = uint64(d.deltas[j])
-				}
-				t := j - i
-				buf[t/8][t%8] = d.deltas[j]
-			}
-			bw = bits.Len64(uint64(max))
-		}
-
-		d.bitWidth = append(d.bitWidth, uint8(bw))
-		data := make([]byte, 0, bw*len(buf))
-		packerFunc := packer[T](bw)
-		for j := range buf {
-			data = append(data, packerFunc(buf[j])...)
-		}
-		d.packed = append(d.packed, data)
-	}
+	d.bitWidth, d.packed = x.PackDeltas(d.deltas, d.miniBlockValueCount)
 
 	for len(d.bitWidth) < d.miniBlockCount {
 		d.bitWidth = append(d.bitWidth, 0)
@@ -125,13 +85,14 @@ func (d *deltaBitPackEncoder[T]) flush() error {
 			return err
 		}
 	}
-	d.minDelta = maxValue[T]()
+
+	d.minDelta = x.MaxValue()
 	d.deltas = d.deltas[:0]
 
 	return nil
 }
 
-func (d *deltaBitPackEncoder[T]) addValue(i T) error {
+func (d *deltaBitPackEncoder[T, I]) addValue(i T) error {
 	d.valuesCount++
 	if d.valuesCount == 1 {
 		d.firstValue = i
@@ -154,7 +115,7 @@ func (d *deltaBitPackEncoder[T]) addValue(i T) error {
 	return nil
 }
 
-func (d *deltaBitPackEncoder[T]) write() error {
+func (d *deltaBitPackEncoder[T, I]) write() error {
 	if len(d.deltas) > 0 {
 		if err := d.flush(); err != nil {
 			return err
@@ -180,6 +141,6 @@ func (d *deltaBitPackEncoder[T]) write() error {
 	return writeFull(d.w, d.buffer.Bytes())
 }
 
-func (d *deltaBitPackEncoder[T]) Close() error {
+func (d *deltaBitPackEncoder[T, I]) Close() error {
 	return d.write()
 }

@@ -4,41 +4,22 @@ import (
 	"io"
 	"unsafe"
 
-	"github.com/pkg/errors"
-
 	"github.com/fraugster/parquet-go/parquet"
+	"github.com/pkg/errors"
 )
 
-type internalType[T floatType] interface {
-	MaxValue() T
-	MinValue() T
-	ParquetType() parquet.Type
-	ToBytes(v T) []byte
-	EncodeBinaryValues(w io.Writer, values []interface{}) error
-	DecodeBinaryValues(r io.Reader, dst []interface{}) (int, error)
-	// TODO
-}
-
-type floatType interface {
-	float32 | float64
-}
-
-type internalFloatType[T floatType] interface {
-	internalType[T]
-}
-
-type floatPlainDecoder[F floatType, T internalFloatType[F]] struct {
+type floatPlainDecoder[T floatType, I internalFloatType[T]] struct {
 	r io.Reader
 }
 
-func (f *floatPlainDecoder[F, T]) init(r io.Reader) error {
+func (f *floatPlainDecoder[T, I]) init(r io.Reader) error {
 	f.r = r
 
 	return nil
 }
 
-func (f *floatPlainDecoder[F, T]) decodeValues(dst []interface{}) (int, error) {
-	var x T
+func (f *floatPlainDecoder[T, I]) decodeValues(dst []interface{}) (int, error) {
+	var x I
 	return x.DecodeBinaryValues(f.r, dst)
 }
 
@@ -46,18 +27,18 @@ type floatPlainEncoder[F floatType, T internalFloatType[F]] struct {
 	w io.Writer
 }
 
-func (d *floatPlainEncoder[F, T]) Close() error {
+func (d *floatPlainEncoder[T, I]) Close() error {
 	return nil
 }
 
-func (d *floatPlainEncoder[F, T]) init(w io.Writer) error {
+func (d *floatPlainEncoder[T, I]) init(w io.Writer) error {
 	d.w = w
 
 	return nil
 }
 
-func (d *floatPlainEncoder[F, T]) encodeValues(values []interface{}) error {
-	var x T
+func (d *floatPlainEncoder[T, I]) encodeValues(values []interface{}) error {
+	var x I
 	return x.EncodeBinaryValues(d.w, values)
 }
 
@@ -68,51 +49,51 @@ type floatStore[F floatType, T internalFloatType[F]] struct {
 	*ColumnParameters
 }
 
-func (f *floatStore[F, T]) params() *ColumnParameters {
+func (f *floatStore[T, I]) params() *ColumnParameters {
 	if f.ColumnParameters == nil {
 		panic("ColumnParameters is nil")
 	}
 	return f.ColumnParameters
 }
 
-func (*floatStore[F, T]) sizeOf(v interface{}) int {
+func (*floatStore[T, I]) sizeOf(v interface{}) int {
 	var x T
 	return int(unsafe.Sizeof(x))
 }
 
-func (f *floatStore[F, T]) parquetType() parquet.Type {
-	var x T
+func (f *floatStore[T, I]) parquetType() parquet.Type {
+	var x I
 	return x.ParquetType()
 }
 
-func (f *floatStore[F, T]) repetitionType() parquet.FieldRepetitionType {
+func (f *floatStore[T, I]) repetitionType() parquet.FieldRepetitionType {
 	return f.repTyp
 }
 
-func (f *floatStore[F, T]) reset(rep parquet.FieldRepetitionType) {
-	var x T
+func (f *floatStore[T, I]) reset(rep parquet.FieldRepetitionType) {
+	var x I
 	f.repTyp = rep
 	f.min = x.MaxValue()
 	f.max = x.MinValue()
 }
 
-func (f *floatStore[F, T]) maxValue() []byte {
-	var x T
+func (f *floatStore[T, I]) maxValue() []byte {
+	var x I
 	if f.max == x.MinValue() {
 		return nil
 	}
 	return x.ToBytes(f.max)
 }
 
-func (f *floatStore[F, T]) minValue() []byte {
-	var x T
+func (f *floatStore[T, I]) minValue() []byte {
+	var x I
 	if f.min == x.MaxValue() {
 		return nil
 	}
 	return x.ToBytes(f.min)
 }
 
-func (f *floatStore[F, T]) setMinMax(j F) {
+func (f *floatStore[T, I]) setMinMax(j T) {
 	if j < f.min {
 		f.min = j
 	}
@@ -121,13 +102,13 @@ func (f *floatStore[F, T]) setMinMax(j F) {
 	}
 }
 
-func (f *floatStore[F, T]) getValues(v interface{}) ([]interface{}, error) {
+func (f *floatStore[T, I]) getValues(v interface{}) ([]interface{}, error) {
 	var vals []interface{}
 	switch typed := v.(type) {
-	case F:
+	case T:
 		f.setMinMax(typed)
 		vals = []interface{}{typed}
-	case []F:
+	case []T:
 		if f.repTyp != parquet.FieldRepetitionType_REPEATED {
 			return nil, errors.Errorf("the value is not repeated but it is an array")
 		}
@@ -143,9 +124,9 @@ func (f *floatStore[F, T]) getValues(v interface{}) ([]interface{}, error) {
 	return vals, nil
 }
 
-func (*floatStore[F, T]) append(arrayIn interface{}, value interface{}) interface{} {
+func (*floatStore[T, I]) append(arrayIn interface{}, value interface{}) interface{} {
 	if arrayIn == nil {
-		arrayIn = make([]F, 0, 1)
+		arrayIn = make([]T, 0, 1)
 	}
-	return append(arrayIn.([]F), value.(F))
+	return append(arrayIn.([]T), value.(T))
 }

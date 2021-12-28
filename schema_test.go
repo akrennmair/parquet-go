@@ -18,7 +18,7 @@ var sizeFixture = []struct {
 }{
 	{
 		Col: func() *ColumnStore {
-			n, err := NewIntStore[int32](parquet.Encoding_PLAIN, true, &ColumnParameters{})
+			n, err := NewIntStore[int32, internalInt32](parquet.Encoding_PLAIN, true, &ColumnParameters{})
 			if err != nil {
 				panic(err)
 			}
@@ -38,7 +38,7 @@ var sizeFixture = []struct {
 
 	{
 		Col: func() *ColumnStore {
-			n, err := NewIntStore[int64](parquet.Encoding_PLAIN, true, &ColumnParameters{})
+			n, err := NewIntStore[int64, internalInt64](parquet.Encoding_PLAIN, true, &ColumnParameters{})
 			if err != nil {
 				panic(err)
 			}

@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type deltaBitPackDecoder[T intType] struct {
+type deltaBitPackDecoder[T intType, I internalIntType[T]] struct {
 	r io.Reader
 
 	blockSize           int32
@@ -27,11 +27,11 @@ type deltaBitPackDecoder[T intType] struct {
 	miniBlock                [8]T
 }
 
-func (d *deltaBitPackDecoder[T]) initSize(r io.Reader) error {
+func (d *deltaBitPackDecoder[T, I]) initSize(r io.Reader) error {
 	return d.init(r)
 }
 
-func (d *deltaBitPackDecoder[T]) init(r io.Reader) error {
+func (d *deltaBitPackDecoder[T, I]) init(r io.Reader) error {
 	d.r = r
 
 	if err := d.readBlockHeader(); err != nil {
@@ -45,7 +45,7 @@ func (d *deltaBitPackDecoder[T]) init(r io.Reader) error {
 	return nil
 }
 
-func (d *deltaBitPackDecoder[T]) readBlockHeader() error {
+func (d *deltaBitPackDecoder[T, I]) readBlockHeader() error {
 	var err error
 	if d.blockSize, err = readUVariant32(d.r); err != nil {
 		return errors.Wrap(err, "failed to read block size")
@@ -75,21 +75,21 @@ func (d *deltaBitPackDecoder[T]) readBlockHeader() error {
 		return errors.New("invalid total value count")
 	}
 
-	if d.previousValue, err = readVarint[T](d.r); err != nil {
+	if d.previousValue, err = readVarint[T, I](d.r); err != nil {
 		return errors.Wrap(err, "failed to read first value")
 	}
 
 	return nil
 }
 
-func (d *deltaBitPackDecoder[T]) readMiniBlockHeader() error {
+func (d *deltaBitPackDecoder[T, I]) readMiniBlockHeader() error {
 	var err error
 
 	var x T
 
 	bitWidth := uint8(unsafe.Sizeof(x) * 8)
 
-	if d.minDelta, err = readVarint[T](d.r); err != nil {
+	if d.minDelta, err = readVarint[T, I](d.r); err != nil {
 		return errors.Wrap(err, "failed to read min delta")
 	}
 
@@ -111,7 +111,7 @@ func (d *deltaBitPackDecoder[T]) readMiniBlockHeader() error {
 	return nil
 }
 
-func (d *deltaBitPackDecoder[T]) next() (T, error) {
+func (d *deltaBitPackDecoder[T, I]) next() (T, error) {
 	if d.position >= d.valuesCount {
 		// No value left in the buffer
 		return 0, io.EOF
