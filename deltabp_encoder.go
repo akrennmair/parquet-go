@@ -9,6 +9,8 @@ import (
 )
 
 type deltaBitPackEncoder[T intType, I internalIntType[T]] struct {
+	impl I
+
 	deltas   []T
 	bitWidth []uint8
 	packed   [][]byte
@@ -44,11 +46,9 @@ func (d *deltaBitPackEncoder[T, I]) init(w io.Writer) error {
 		return errors.Errorf("invalid mini block count, the mini block value count should be multiply of 8, it is %d", d.miniBlockCount)
 	}
 
-	var x I
-
 	d.firstValue = 0
 	d.valuesCount = 0
-	d.minDelta = x.MaxValue()
+	d.minDelta = d.impl.MaxValue()
 	d.deltas = make([]T, 0, d.blockSize)
 	d.previousValue = 0
 	d.buffer = &bytes.Buffer{}
@@ -57,8 +57,6 @@ func (d *deltaBitPackEncoder[T, I]) init(w io.Writer) error {
 }
 
 func (d *deltaBitPackEncoder[T, I]) flush() error {
-	var x I
-
 	// Technically, based on the spec after this step all values are positive, but NO, it's not. the problem is when
 	// the min delta is small enough (lets say MinInt) and one of deltas are MaxInt, the the result of MaxInt-MinInt is
 	// -1, get the idea, there is a lot of numbers here because of overflow can produce negative value
@@ -70,7 +68,7 @@ func (d *deltaBitPackEncoder[T, I]) flush() error {
 		return err
 	}
 
-	d.bitWidth, d.packed = x.PackDeltas(d.deltas, d.miniBlockValueCount)
+	d.bitWidth, d.packed = d.impl.PackDeltas(d.deltas, d.miniBlockValueCount)
 
 	for len(d.bitWidth) < d.miniBlockCount {
 		d.bitWidth = append(d.bitWidth, 0)
@@ -86,7 +84,7 @@ func (d *deltaBitPackEncoder[T, I]) flush() error {
 		}
 	}
 
-	d.minDelta = x.MaxValue()
+	d.minDelta = d.impl.MaxValue()
 	d.deltas = d.deltas[:0]
 
 	return nil

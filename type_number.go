@@ -8,7 +8,8 @@ import (
 )
 
 type numberPlainDecoder[T numberType, I internalNumberType[T]] struct {
-	r io.Reader
+	impl I
+	r    io.Reader
 }
 
 func (f *numberPlainDecoder[T, I]) init(r io.Reader) error {
@@ -18,12 +19,12 @@ func (f *numberPlainDecoder[T, I]) init(r io.Reader) error {
 }
 
 func (f *numberPlainDecoder[T, I]) decodeValues(dst []interface{}) (int, error) {
-	var x I
-	return x.DecodeBinaryValues(f.r, dst)
+	return f.impl.DecodeBinaryValues(f.r, dst)
 }
 
 type numberPlainEncoder[T numberType, I internalNumberType[T]] struct {
-	w io.Writer
+	impl I
+	w    io.Writer
 }
 
 func (d *numberPlainEncoder[T, I]) Close() error {
@@ -37,11 +38,12 @@ func (d *numberPlainEncoder[T, I]) init(w io.Writer) error {
 }
 
 func (d *numberPlainEncoder[T, I]) encodeValues(values []interface{}) error {
-	var x I
-	return x.EncodeBinaryValues(d.w, values)
+	return d.impl.EncodeBinaryValues(d.w, values)
 }
 
 type numberStore[T numberType, I internalNumberType[T]] struct {
+	impl I
+
 	repTyp   parquet.FieldRepetitionType
 	min, max T
 
@@ -55,14 +57,12 @@ func (f *numberStore[T, I]) params() *ColumnParameters {
 	return f.ColumnParameters
 }
 
-func (*numberStore[T, I]) sizeOf(v interface{}) int {
-	var x I
-	return x.Sizeof()
+func (f *numberStore[T, I]) sizeOf(v interface{}) int {
+	return f.impl.Sizeof()
 }
 
 func (f *numberStore[T, I]) parquetType() parquet.Type {
-	var x I
-	return x.ParquetType()
+	return f.impl.ParquetType()
 }
 
 func (f *numberStore[T, I]) repetitionType() parquet.FieldRepetitionType {
@@ -70,26 +70,23 @@ func (f *numberStore[T, I]) repetitionType() parquet.FieldRepetitionType {
 }
 
 func (f *numberStore[T, I]) reset(rep parquet.FieldRepetitionType) {
-	var x I
 	f.repTyp = rep
-	f.min = x.MaxValue()
-	f.max = x.MinValue()
+	f.min = f.impl.MaxValue()
+	f.max = f.impl.MinValue()
 }
 
 func (f *numberStore[T, I]) maxValue() []byte {
-	var x I
-	if f.max == x.MinValue() {
+	if f.max == f.impl.MinValue() {
 		return nil
 	}
-	return x.ToBytes(f.max)
+	return f.impl.ToBytes(f.max)
 }
 
 func (f *numberStore[T, I]) minValue() []byte {
-	var x I
-	if f.min == x.MaxValue() {
+	if f.min == f.impl.MaxValue() {
 		return nil
 	}
-	return x.ToBytes(f.min)
+	return f.impl.ToBytes(f.min)
 }
 
 func (f *numberStore[T, I]) setMinMax(j T) {

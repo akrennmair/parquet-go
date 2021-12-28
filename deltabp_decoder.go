@@ -2,12 +2,13 @@ package goparquet
 
 import (
 	"io"
-	"unsafe"
 
 	"github.com/pkg/errors"
 )
 
 type deltaBitPackDecoder[T intType, I internalIntType[T]] struct {
+	impl I
+
 	r io.Reader
 
 	blockSize           int32
@@ -85,9 +86,7 @@ func (d *deltaBitPackDecoder[T, I]) readBlockHeader() error {
 func (d *deltaBitPackDecoder[T, I]) readMiniBlockHeader() error {
 	var err error
 
-	var x T
-
-	bitWidth := uint8(unsafe.Sizeof(x) * 8)
+	bitWidth := uint8(d.impl.Sizeof() * 8)
 
 	if d.minDelta, err = readVarint[T, I](d.r); err != nil {
 		return errors.Wrap(err, "failed to read min delta")
@@ -112,8 +111,6 @@ func (d *deltaBitPackDecoder[T, I]) readMiniBlockHeader() error {
 }
 
 func (d *deltaBitPackDecoder[T, I]) next() (T, error) {
-	var x I
-
 	if d.position >= d.valuesCount {
 		// No value left in the buffer
 		return 0, io.EOF
@@ -131,7 +128,7 @@ func (d *deltaBitPackDecoder[T, I]) next() (T, error) {
 			}
 
 			d.currentMiniBlockBitWidth = d.miniBlockBitWidth[d.currentMiniBlock]
-			d.currentUnpacker = x.GetUnpacker(int(d.currentMiniBlockBitWidth))
+			d.currentUnpacker = d.impl.GetUnpacker(int(d.currentMiniBlockBitWidth))
 
 			d.miniBlockPosition = 0
 			d.currentMiniBlock++
