@@ -3,11 +3,9 @@ package goparquet
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/fraugster/parquet-go/parquet"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func newIntStore() *ColumnStore {

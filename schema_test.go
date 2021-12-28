@@ -6,10 +6,9 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/fraugster/parquet-go/parquet"
 	"github.com/fraugster/parquet-go/parquetschema"
+	"github.com/stretchr/testify/require"
 )
 
 var sizeFixture = []struct {

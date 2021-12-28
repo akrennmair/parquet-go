@@ -6,7 +6,6 @@ import (
 	"io"
 
 	"github.com/fraugster/parquet-go/parquet"
-
 	"github.com/pkg/errors"
 )
 

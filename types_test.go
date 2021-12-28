@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/fraugster/parquet-go/parquet"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
